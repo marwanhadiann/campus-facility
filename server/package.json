@@ -8,8 +8,11 @@
     "db:pull": "drizzle-kit pull"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
     "dotenv": "^18.0.5",
     "drizzle-orm": "^0.45.3",
+    "jsonwebtoken": "^9.0.3",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
