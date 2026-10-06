@@ -7,7 +7,7 @@ const router = Router()
 /**
  * @route   POST /api/auth/register
  * @desc    Registrasi pengguna baru (Mahasiswa / Dosen / Staff)
- * @access  Public
+ * @access  Private(STAFF)
 */
 router.post(
     '/register',

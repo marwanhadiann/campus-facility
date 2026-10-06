@@ -48,7 +48,7 @@ export const authorizeRole = (...allowedRoles) => {
         if (!req.user || !allowedRoles.includes(req.user.role)) {
             return res.status(400).json({
                 success: false,
-                message: 'Akses ditolak, Anda tidak memiliki akses untuk melakukan registrasi'
+                message: 'Akses ditolak, Anda tidak memiliki akses untuk melakukan tindakan ini'
             })
         }
         next()

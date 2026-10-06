@@ -25,6 +25,7 @@ export const roleTypeEnum = pgEnum('role_type', [
 export const statusRuangTypeEnum = pgEnum('status_ruang_type', [
     'TERSEDIA',
     'DALAM_PERBAIKAN',
+    'DIPAKAI'
 ]);
 
 export const kondisiTypeEnum = pgEnum('kondisi_type', [
