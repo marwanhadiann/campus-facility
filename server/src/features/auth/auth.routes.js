@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as authController from './auth.controller.js'
-import { authenticateToken, authorizeRole } from '../../middlewares/auth.middleware.js';
+import { authenticateToken, authorizeRole, guestOnly } from '../../middlewares/auth.middleware.js';
 
 const router = Router()
 
@@ -20,7 +20,10 @@ router.post(
  * @desc    Login pengguna & dapatkan JWT Token
  * @access  Public
  */
-router.post('/login', authController.login)
+router.post(
+    '/login',
+    guestOnly,
+    authController.login)
 
 /**
  * @route   POST /api/auth/logout
