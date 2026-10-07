@@ -13,7 +13,7 @@ export const getFasilitasByRuangId = async (ruangId) => {
     //jika tidak ada kembalikan null
     if (!existingRuang) return null
 
-    // jika id ruagan yang dicari ada ambil data fasilitas nya
+    // jika id ruangan yang dicari ada ambil data fasilitas nya
     const fasilitas = await db
         .select()
         .from(fasilitasRuang)
@@ -38,4 +38,18 @@ export const createFasilitas = async (payload) => {
         .returning()
 
     return newFasilitas
+}
+
+// Update data fasilitas (Khusus staff)
+export const updateFasilitas = async (id, payload) => {
+    const [updated] = await db
+        .update(fasilitasRuang)
+        .set({
+            ...payload,
+            updated_at: new Date(),
+        })
+        .where(eq(fasilitasRuang.id, Number(id)))
+        .returning()
+
+    return updated
 }

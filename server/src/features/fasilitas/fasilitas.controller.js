@@ -4,7 +4,7 @@ import * as fasilitasRuang from './fasilitas.service.js'
 export const getFasilitasByRuang = async (req, res, next) => {
     try {
         const { ruangId } = req.params
-        const data = await fasilitasRuang.getFasilitasByRuangId(ruangId, req.body)
+        const data = await fasilitasRuang.getFasilitasByRuangId(ruangId)
 
         if (data === null) {
             return res.status(404).json({
@@ -47,6 +47,29 @@ export const createFasilitas = async (req, res, next) => {
             success: true,
             message: 'Data fasilitas berhasil ditambahkan',
             data
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+// Update data fasilitas (Khusus staff)
+export const updateFasilitas = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const updated = await fasilitasRuang.updateFasilitas(id, req.body)
+
+        if (!updated) {
+            return res.status(404).json({
+                success: false,
+                message: 'Fasilitas tidak ditemukan'
+            })
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Fasilitas berhasil diperbarui',
+            data: updated
         })
     } catch (error) {
         next(error)

@@ -25,5 +25,14 @@ router.post(
     authorizeRole('STAFF'),
     fasilitasController.createFasilitas)
 
+/**
+* @route   PUT /fasilitas/:id
+* @desc    Mengubah data atau memperbarui kondisi fasilitas berdasarkan ID fasilitas
+* @access  Private (Khusus Staff)
+*/
+router.put(
+    '/:id',
+    authorizeRole('STAFF'),
+    fasilitasController.updateFasilitas)
 
 export default router
