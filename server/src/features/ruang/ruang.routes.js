@@ -10,7 +10,7 @@ router.use(authenticateToken)
 /**
  * @route   GET /api/ruang
  * @desc    Mendapatkan daftar seluruh ruang
- * @access  Private (Mahasiswa, Dosen, Staff)
+ * @access  Public (Mahasiswa, Dosen, Staff)
  */
 router.get('/', ruangController.getRuangList)
 

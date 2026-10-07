@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import { db } from "../../db/index.js"
 import { ruang } from "../../db/schema.js"
 
@@ -7,6 +7,7 @@ export const getAllRuang = async () => {
     return await db
         .select()
         .from(ruang)
+        .orderBy(desc(ruang.updated_at))
 }
 
 // Mengambil data ruang berdasarkan id
