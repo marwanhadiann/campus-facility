@@ -60,7 +60,6 @@ export const getJadwal = async (req, res, next) => {
     try {
         const { hari, ruang_id, kelas, dosen_id } = req.query
 
-
         const data = await jadwalService.getJadwalFiltered({
             hari,
             ruang_id,

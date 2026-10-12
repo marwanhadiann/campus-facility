@@ -5,6 +5,14 @@ import * as ruangService from "../ruang/ruang.service.js";
 export const getRuangList = async (req, res, next) => {
     try {
         const data = await ruangService.getAllRuang()
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Data ruangan tidak ditemukan.'
+            })
+        }
+
         res.status(200).json({
             success: true,
             message: 'Berhasil mengambil data ruangan',
