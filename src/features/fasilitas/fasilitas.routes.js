@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticateToken, authorizeRole } from "../../middlewares/auth.middleware.js";
 import * as fasilitasController from './fasilitas.controller.js'
+import { createFasilitasSchema, getFasilitasByRuangSchema, idParamSchema, updateFasilitasSchema, validate } from "../../middlewares/validate.middleware.js";
 
 const router = Router()
 
@@ -13,6 +14,7 @@ router.use(authenticateToken)
  */
 router.get(
     '/ruang/:ruangId',
+    validate(getFasilitasByRuangSchema),
     fasilitasController.getFasilitasByRuang)
 
 /**
@@ -23,6 +25,7 @@ router.get(
 router.post(
     '/',
     authorizeRole('STAFF'),
+    validate(createFasilitasSchema),
     fasilitasController.createFasilitas)
 
 /**
@@ -33,6 +36,7 @@ router.post(
 router.put(
     '/:id',
     authorizeRole('STAFF'),
+    validate(updateFasilitasSchema),
     fasilitasController.updateFasilitas)
 
 /**
@@ -43,6 +47,7 @@ router.put(
 router.delete(
     '/:id',
     authorizeRole('STAFF'),
+    validate(idParamSchema),
     fasilitasController.deleteFasilitas)
 
 export default router

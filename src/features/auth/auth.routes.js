@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as authController from './auth.controller.js'
 import { authenticateToken, authorizeRole, guestOnly } from '../../middlewares/auth.middleware.js';
+import { loginSchema, registerSchema, validate } from '../../middlewares/validate.middleware.js';
 
 const router = Router()
 
@@ -13,6 +14,7 @@ router.post(
     '/register',
     authenticateToken,
     authorizeRole('STAFF'),
+    validate(registerSchema),
     authController.register)
 
 /**
@@ -23,6 +25,7 @@ router.post(
 router.post(
     '/login',
     guestOnly,
+    validate(loginSchema),
     authController.login)
 
 /**

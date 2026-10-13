@@ -3,6 +3,7 @@ import { users } from "../../db/schema.js"
 import { generateToken } from "../../utils/jwt.js"
 import { db } from "../../db/index.js";
 import bcrypt from "bcryptjs";
+import { throwError } from "../../utils/error.utils.js";
 
 // Service : Register User
 export const registerUser = async (newData) => {
@@ -18,7 +19,7 @@ export const registerUser = async (newData) => {
         ))
 
     if (existingUser.length > 0) {
-        throw new Error("Email dan Nomor Induk salah");
+        throwError("Email dan Nomor Induk sudah terdaftar", 400);
     }
 
     // hash password
@@ -55,13 +56,13 @@ export const loginUser = async (email, password) => {
         .where(eq(users.email, email))
 
     if (!user) {
-        throw new Error("Email atau Password salah!");
+        throwError("Email atau Password salah!", 401);
     }
 
     // Verifikasi Password
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {
-        throw new Error("Email atau Password salah!");
+        throwError("Email atau Password salah!", 401);
     }
 
     // Generate JWT Token

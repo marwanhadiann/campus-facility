@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authenticateToken, authorizeRole } from "../../middlewares/auth.middleware.js";
 import * as jadwalController from './jadwal.controller.js'
+import { createJadwalSchema, createMataKuliahSchema, getJadwalQuerySchema, validate } from "../../middlewares/validate.middleware.js";
 
 const router = Router()
 
@@ -11,20 +12,31 @@ router.use(authenticateToken)
  * @desc    Melihat atau mencari daftar jadwal harian perkuliahan
  * @access  Private (Mahasiswa, Dosen, Staff)
  */
-router.get('/', jadwalController.getJadwal)
+router.get(
+    '/',
+    validate(getJadwalQuerySchema),
+    jadwalController.getJadwal)
 
 /**
  * @route   POST /api/jadwal/mata-kuliah
  * @desc    Menambahkan data mata kuliah baru
  * @access  Private (Khusus Staff)
  */
-router.post('/mata-kuliah', authorizeRole('STAFF'), jadwalController.createMataKuliah)
+router.post(
+    '/mata-kuliah',
+    authorizeRole('STAFF'),
+    validate(createMataKuliahSchema),
+    jadwalController.createMataKuliah)
 
 /**
  * @route   POST /api/jadwal
  * @desc    Menambahkan jadwal perkuliahan utama
  * @access  Private (Khusus Staff)
  */
-router.post('/', authorizeRole('STAFF'), jadwalController.createJadwal)
+router.post(
+    '/',
+    authorizeRole('STAFF'),
+    validate(createJadwalSchema),
+    jadwalController.createJadwal)
 
 export default router

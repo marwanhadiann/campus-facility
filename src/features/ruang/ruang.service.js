@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm"
 import { db } from "../../db/index.js"
 import { ruang } from "../../db/schema.js"
+import { throwError } from "../../utils/error.utils.js"
 
 // Mengambil data semua ruang
 export const getAllRuang = async () => {
@@ -11,11 +12,14 @@ export const getAllRuang = async () => {
 }
 
 // Mengambil data ruang berdasarkan id
-export const getRuangById = async () => {
+export const getRuangById = async (id) => {
     const [data] = await db
         .select()
         .from(ruang)
         .where(eq(ruang.id, Number(id)))
+
+    if (!data) throwError('Ruangan tidak ditemukan', 404)
+    return data
 }
 
 // Menambahkan ruang (Khusus STAFF)
@@ -46,6 +50,8 @@ export const updateRuang = async (id, payload) => {
         .where(eq(ruang.id, Number(id)))
         .returning()
 
+    if (!updated) throwError('Ruangan tidak ditemukan', 404)
+
     return updated
 }
 
@@ -55,6 +61,8 @@ export const deleteRuang = async (id) => {
         .delete(ruang)
         .where(eq(ruang.id, Number(id)))
         .returning()
+
+    if (!deleted) throwError('Ruangan tidak ditemukan', 404)
 
     return deleted
 }

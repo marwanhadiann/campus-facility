@@ -11,23 +11,7 @@ const COOKIE_OPTIONS = {
 // handler register
 export const register = async (req, res, next) => {
     try {
-        const { nomor_induk, nama, email, password, role } = req.body
-
-        // validasi input data
-        if (!nomor_induk || !nama || !email || !password || !role) {
-            return res.status(400).json({
-                success: false,
-                message: 'Semua data wajib diisi'
-            })
-        }
-
-        const newUser = await authService.registerUser({
-            nomor_induk,
-            nama,
-            email,
-            password,
-            role,
-        })
+        const newUser = await authService.registerUser(req.body)
 
         res.status(201).json({
             success: true,
@@ -43,13 +27,6 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
     try {
         const { email, password } = req.body
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email dan Password wajib diisi!'
-            })
-        }
-
         const { user, token } = await authService.loginUser(email, password)
         res.cookie('token', token, COOKIE_OPTIONS)
 
@@ -78,10 +55,6 @@ export const logout = (req, res, next) => {
             message: 'Berhasil Logout'
         })
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: 'Gagal Logout',
-            error: error.message
-        })
+        next(error)
     }
 }

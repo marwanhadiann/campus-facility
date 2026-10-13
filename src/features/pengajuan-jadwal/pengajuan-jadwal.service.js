@@ -1,13 +1,8 @@
 import { eq, and, or, lte, gte } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { pengajuanJadwal, jadwal, ruang, users, mataKuliah } from '../../db/schema.js';
+import { throwError } from '../../utils/error.utils.js';
 
-// Helper custom error untuk memicu statusCode pada middleware errorHandler
-const createCustomError = (message, statusCode = 400) => {
-    const error = new Error(message);
-    error.statusCode = statusCode;
-    return error;
-};
 
 // 1. Dosen Mengajukan Perubahan Jadwal Baru
 export const createPengajuan = async (payload) => {
@@ -20,7 +15,7 @@ export const createPengajuan = async (payload) => {
         .where(and(eq(jadwal.id, Number(jadwal_id)), eq(jadwal.dosen_id, Number(dosen_id))));
 
     if (!existingJadwal) {
-        throw createCustomError('Jadwal perkuliahan tidak ditemukan atau bukan milik Anda', 404);
+        throwError('Jadwal perkuliahan tidak ditemukan atau bukan milik Anda', 404);
     }
 
     // Insert pengajuan baru (Status default: PENDING)
@@ -80,7 +75,7 @@ export const evaluatePengajuan = async (id, staffId, payload) => {
 
     // ATURAN BISNIS 3: Wajib melampirkan catatan saat menolak pengajuan
     if (status === 'REJECTED' && !catatan_staff) {
-        throw createCustomError('Catatan penjelasan dari staff wajib diisi saat menolak pengajuan ganti jadwal', 400);
+        throwError('Catatan penjelasan dari staff wajib diisi saat menolak pengajuan ganti jadwal', 400);
     }
 
     // Ambil detail data pengajuan jadwal
@@ -90,11 +85,11 @@ export const evaluatePengajuan = async (id, staffId, payload) => {
         .where(eq(pengajuanJadwal.id, Number(id)));
 
     if (!pengajuan) {
-        throw createCustomError('Data pengajuan jadwal tidak ditemukan', 404);
+        throwError('Data pengajuan jadwal tidak ditemukan', 404);
     }
 
     if (pengajuan.status !== 'PENDING') {
-        throw createCustomError('Pengajuan ini sudah pernah dievaluasi sebelumnya', 400);
+        throwError('Pengajuan ini sudah pernah dievaluasi sebelumnya', 400);
     }
 
     // ATURAN BISNIS 2 (ZERO ROOM CONFLICT): Pengecekan Bentrok Ruangan jika disetujui (APPROVED)
@@ -117,7 +112,7 @@ export const evaluatePengajuan = async (id, staffId, payload) => {
             );
 
         if (roomConflict.length > 0) {
-            throw createCustomError('Persetujuan ditolak: Ruangan tersebut sudah terpakai oleh jadwal perkuliahan lain pada tanggal dan jam tersebut (Room Conflict)', 400);
+            throwError('Persetujuan ditolak: Ruangan tersebut sudah terpakai oleh jadwal perkuliahan lain pada tanggal dan jam tersebut (Room Conflict)', 400);
         }
     }
 
