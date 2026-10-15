@@ -9,6 +9,7 @@ import {
     time,
     date,
     timestamp,
+    boolean
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -174,6 +175,18 @@ export const pengajuanJadwal = pgTable('pengajuan_jadwal', {
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
+// 8. Table: notifikasi
+export const notifikasi = pgTable('notifikasi', {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    user_id: bigint('user_id', { mode: 'number' })
+        .references(() => users.id),
+    kelas_target: varchar('kelas_target', { length: 10 }), // Untuk filter mahasiswa berdasarkan kelas
+    judul: varchar('judul', { length: 150 }).notNull(),
+    pesan: text('pesan').notNull(),
+    dibaca: boolean('dibaca').default(false).notNull(), // menggunakan boolean dari pg-core 
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 // =========================================
 // DRIZZLE RELATIONS (Mempermudah Query JOIN)
 // =========================================
@@ -237,6 +250,13 @@ export const pengajuanJadwalRelations = relations(pengajuanJadwal, ({ one }) => 
     }),
     staff: one(users, {
         fields: [pengajuanJadwal.staff_id],
+        references: [users.id],
+    }),
+}));
+
+export const notifikasiRelations = relations(notifikasi, ({ one }) => ({
+    user: one(users, {
+        fields: [notifikasi.user_id],
         references: [users.id],
     }),
 }));
