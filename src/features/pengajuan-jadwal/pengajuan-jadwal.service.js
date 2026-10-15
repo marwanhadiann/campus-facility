@@ -1,7 +1,8 @@
 import { eq, and, or, lte, gte, aliasedTable } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { pengajuanJadwal, jadwal, ruang, users, mataKuliah } from '../../db/schema.js';
+import { pengajuanJadwal, jadwal, ruang, users, mataKuliah, notifikasi } from '../../db/schema.js';
 import { throwError } from '../../utils/error.utils.js';
+import { checkRoomConflict } from '../../utils/schedule.utils.js';
 
 
 // 1. Dosen Mengajukan Perubahan Jadwal Baru
@@ -73,7 +74,7 @@ export const getPengajuanList = async (user) => {
 export const evaluatePengajuan = async (id, staffId, payload) => {
     const { status, catatan_staff } = payload;
 
-    // ATURAN BISNIS 3: Wajib melampirkan catatan saat menolak pengajuan
+    // ATURAN BISNIS : Wajib melampirkan catatan saat menolak pengajuan
     if (status === 'REJECTED' && !catatan_staff) {
         throwError('Catatan penjelasan dari staff wajib diisi saat menolak pengajuan ganti jadwal', 400);
     }
@@ -84,51 +85,64 @@ export const evaluatePengajuan = async (id, staffId, payload) => {
         .from(pengajuanJadwal)
         .where(eq(pengajuanJadwal.id, Number(id)));
 
-    if (!pengajuan) {
-        throwError('Data pengajuan jadwal tidak ditemukan', 404);
-    }
+    if (!pengajuan) throwError('Data pengajuan jadwal tidak ditemukan', 404);
 
-    if (pengajuan.status !== 'PENDING') {
-        throwError('Pengajuan ini sudah pernah dievaluasi sebelumnya', 400);
-    }
+    if (pengajuan.status !== 'PENDING') throwError('Pengajuan ini sudah pernah dievaluasi sebelumnya', 400);
 
     // ATURAN BISNIS 2 (ZERO ROOM CONFLICT): Pengecekan Bentrok Ruangan jika disetujui (APPROVED)
     if (status === 'APPROVED') {
-        const targetRuangId = pengajuan.ruang_baru_id;
+        const conflictCheck = await checkRoomConflict({
+            ruangId: pengajuan.ruang_baru_id,
+            tanggal: pengajuan.tanggal_baru,
+            jamMulai: pengajuan.jam_mulai_baru,
+            jamSelesai: pengajuan.jam_selesai_baru,
+            currentPengajuanId: pengajuan.id
+        })
 
-        // Cek apakah ada pengajuan lain yang SUDAH DISATUKAN pada ruangan, tanggal, dan rentang jam yang sama
-        const roomConflict = await db
-            .select()
-            .from(pengajuanJadwal)
-            .where(
-                and(
-                    eq(pengajuanJadwal.ruang_baru_id, targetRuangId),
-                    eq(pengajuanJadwal.tanggal_baru, pengajuan.tanggal_baru),
-                    eq(pengajuanJadwal.status, 'APPROVED'),
-                    // Logika Irisan Jam (Overlapping Time Window)
-                    lte(pengajuanJadwal.jam_mulai_baru, pengajuan.jam_selesai_baru),
-                    gte(pengajuanJadwal.jam_selesai_baru, pengajuan.jam_mulai_baru)
-                )
-            );
-
-        if (roomConflict.length > 0) {
-            throwError('Persetujuan ditolak: Ruangan tersebut sudah terpakai oleh jadwal perkuliahan lain pada tanggal dan jam tersebut (Room Conflict)', 400);
-        }
+        if (conflictCheck.hasConflict) throwError(conflictCheck.message, 400)
     }
 
-    // Update status keputusan staff
-    const [updated] = await db
-        .update(pengajuanJadwal)
-        .set({
-            status,
-            catatan_staff,
-            staff_id: Number(staffId),
-            updated_at: new Date(),
-        })
-        .where(eq(pengajuanJadwal.id, Number(id)))
-        .returning();
+    const [jadwalLama] = await db
+        .select()
+        .from(jadwal)
+        .where(eq(jadwal.id, pengajuan.jadwal_id))
 
-    return updated;
+    return await db.transaction(async (tx) => {
+        const [updated] = await db
+            .update(pengajuanJadwal)
+            .set({
+                status,
+                catatan_staff,
+                staff_id: Number(staffId),
+                updated_at: new Date(),
+            })
+            .where(eq(pengajuanJadwal.id, Number(id)))
+            .returning();
+
+        if (status === 'APPROVED') {
+            // Notif personal untuk DOSEN
+            await tx.insert(notifikasi).values({
+                user_id: pengajuan.dosen_id,
+                judul: 'Pengajuan jadwal disetujui',
+                pesan: `Pengajuan ganti jadwal Anda untuk kelas ${jadwalLama?.kelas || ''} pada tanggal ${pengajuan.tanggal_baru} (${pengajuan.jam_mulai_baru} - ${pengajuan.jam_selesai_baru}) telah disetujui oleh Staff`
+            })
+
+            // Notif untuk mahasiswa di kelas terkait
+            await tx.insert(notifikasi).values({
+                kelas_target: jadwalLama?.kelas || null,
+                judul: 'Pengumuman perubahan jadwal perkuliahan',
+                pesan: `Perhatian untuk mahasiswa kelas ${jadwalLama?.kelas || ''}: Perkuliahan mengalami perubahan jadwal ke tanggal ${pengajuan.tanggal_baru} jam ${pengajuan.jam_mulai_baru} - ${pengajuan.jam_selesai_baru}.`
+            })
+        } else if (status === 'REJECTED') {
+            await tx.insert(notifikasi).values({
+                user_id: pengajuan.dosen_id,
+                judul: 'Pengajuan jadwal ditolak',
+                pesan: `Pengajuan jadwal pengganti untuk kelas ${jadwalLama?.kelas || ''} ditolak oleh Staff. Catatan ${catatan_staff}`
+            })
+        }
+
+        return updated;
+    })
 };
 
 // 4. Ambil Detail Tracking Pengajuan Jadwal Berdasarkan ID
