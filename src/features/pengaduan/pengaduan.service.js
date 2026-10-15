@@ -29,7 +29,7 @@ export const createPengaduan = async (payload) => {
                 inArray(pengaduan.status, ['OPEN', 'IN_PROGRESS', 'VERIFIED'])
             )
         )
-    if (activeReport > 0) {
+    if (activeReport.length > 0) {
         throwError('Fasilitas pada ruangan ini sedang dalam laporan kerusakan aktif yang diproses', 400)
     }
 
