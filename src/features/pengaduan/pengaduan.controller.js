@@ -1,3 +1,4 @@
+import { success } from 'zod';
 import * as pengaduanService from './pengaduan.service.js';
 
 // Handler: Mahasiswa/Dosen membuat pengaduan kerusakan fasilitas
@@ -55,3 +56,35 @@ export const getRiwayat = async (req, res, next) => {
         next(error);
     }
 };
+
+// Handler: Ambil daftar pengaduan milik user yang sedang login
+export const getMyPengaduan = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const data = await pengaduanService.getMyPengaduan(userId)
+
+        res.status(200).json({
+            success: true,
+            message: 'Berhasil mengambil data pengaduan anda',
+            data
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
+// Handler: Ambil detail tracking pengaduan spesifik
+export const getPengaduanDetail = async (req, res, next) => {
+    try {
+        const { id } = req.params
+        const data = await pengaduanService.getPengaduanDetail(id, req.user)
+
+        res.status(200).json({
+            success: true,
+            message: 'Berhasil mengambil detail tracking pengaduan',
+            data
+        })
+    } catch (error) {
+        next(error)
+    }
+}

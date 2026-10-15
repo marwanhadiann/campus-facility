@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray } from "drizzle-orm"
-import { fasilitasRuang, pengaduan } from "../../db/schema.js"
+import { fasilitasRuang, pengaduan, ruang } from "../../db/schema.js"
 import { throwError } from "../../utils/error.utils.js"
 import { db } from "../../db/index.js"
 
@@ -96,4 +96,58 @@ export const getRiwayatPerbaikan = async () => {
         .from(pengaduan)
         .where(eq(pengaduan.status, 'RESOLVED'))
         .orderBy(desc(pengaduan.updated_at))
+}
+
+// Ambil seluruh pengaduan milik pelapor
+export const getMyPengaduan = async (userId) => {
+    return await db
+        .select({
+            id: pengaduan.id,
+            judul: pengaduan.judul,
+            deskripsi: pengaduan.deskripsi,
+            foto_url: pengaduan.foto_url,
+            status: pengaduan.status,
+            prioritas: pengaduan.prioritas,
+            catatan_staff: pengaduan.catatan_staff,
+            created_at: pengaduan.created_at,
+            updated_at: pengaduan.updated_at,
+            nama_ruang: ruang.nama_ruang,
+            nama_fasilitas: fasilitasRuang.nama_fasilitas
+        })
+        .from(pengaduan)
+        .innerJoin(fasilitasRuang, eq(pengaduan.fasilitas_ruang_id, fasilitasRuang.id))
+        .innerJoin(ruang, eq(fasilitasRuang.ruang_id, ruang.id))
+        .where(eq(pengaduan.mahasiswa_id, Number(userId)))
+        .orderBy(desc(pengaduan.created_at))
+}
+
+// Ambil data pengaduan detail berdasarkan ID
+export const getPengaduanDetail = async (id, user) => {
+    const [report] = await db
+        .select({
+            id: pengaduan.id,
+            judul: pengaduan.judul,
+            deskripsi: pengaduan.deskripsi,
+            foto_url: pengaduan.foto_url,
+            status: pengaduan.status,
+            prioritas: pengaduan.prioritas,
+            catatan_staff: pengaduan.catatan_staff,
+            created_at: pengaduan.created_at,
+            updated_at: pengaduan.updated_at,
+            mahasiswa_id: pengaduan.mahasiswa_id,
+            nama_ruang: ruang.nama_ruang,
+            nama_fasilitas: fasilitasRuang.nama_fasilitas
+        })
+        .from(pengaduan)
+        .innerJoin(fasilitasRuang, eq(pengaduan.fasilitas_ruang_id, fasilitasRuang.id))
+        .innerJoin(ruang, eq(fasilitasRuang.ruang_id, ruang.id))
+        .where(eq(pengaduan.id, Number(id)))
+
+    if (!report) throwError('Data pengaduan tidak ditemukan', 404)
+
+    // Mahasiswa/Dosen hanya boleh melihat laporan miliknya sendiri
+    if (user.role !== 'STAFF' && report.mahasiswa_id !== user.id)
+        throwError('Akses ditolak, anda tidak memiliki akses untuk melihat laporan ini', 403)
+
+    return report
 }
