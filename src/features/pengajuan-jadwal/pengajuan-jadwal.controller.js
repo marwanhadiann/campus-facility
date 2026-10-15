@@ -1,3 +1,4 @@
+import { success } from 'zod';
 import * as pengajuanService from './pengajuan-jadwal.service.js';
 
 // Handler: Dosen Mengajukan Ganti Jadwal
@@ -56,3 +57,19 @@ export const evaluatePengajuan = async (req, res, next) => {
         next(error); // Menangkap error penolakan bentrok ruangan/catatan kosong
     }
 };
+
+// Handler: Ambil Detail Tracking Pengajuan Jadwal
+export const getPengajuanDetail = async (req, res, next) => {
+    try {
+        const { id } = req.params
+        const data = await pengajuanService.getPengajuanDetail(id, req.user)
+
+        res.status(200).json({
+            success: true,
+            message: 'Berhasil mengambil detail tracking pengajuan jadwal',
+            data
+        })
+    } catch (error) {
+        next(error)
+    }
+}

@@ -1,4 +1,4 @@
-import { eq, and, or, lte, gte } from 'drizzle-orm';
+import { eq, and, or, lte, gte, aliasedTable } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { pengajuanJadwal, jadwal, ruang, users, mataKuliah } from '../../db/schema.js';
 import { throwError } from '../../utils/error.utils.js';
@@ -130,3 +130,54 @@ export const evaluatePengajuan = async (id, staffId, payload) => {
 
     return updated;
 };
+
+// 4. Ambil Detail Tracking Pengajuan Jadwal Berdasarkan ID
+export const getPengajuanDetail = async (id, user) => {
+    const ruangLama = aliasedTable(ruang, 'ruang_lama')
+    const ruangBaru = aliasedTable(ruang, 'ruang_baru')
+
+    const [report] = await db
+        .select({
+            id: pengajuanJadwal.id,
+            status: pengajuanJadwal.status,
+            alasan: pengajuanJadwal.alasan,
+            catatan_staff: pengajuanJadwal.catatan_staff,
+            tanggal_baru: pengajuanJadwal.tanggal_baru,
+            jam_mulai_baru: pengajuanJadwal.jam_mulai_baru,
+            jam_selesai_baru: pengajuanJadwal.jam_selesai_baru,
+            created_at: pengajuanJadwal.created_at,
+            updated_at: pengajuanJadwal.updated_at,
+            dosen_id: pengajuanJadwal.dosen_id,
+            dosen: {
+                nama: users.nama,
+                email: users.email,
+            },
+            jadwal_asal: {
+                hari: jadwal.hari,
+                jam_mulai: jadwal.jam_mulai,
+                jam_selesai: jadwal.jam_selesai,
+                mata_kuliah: mataKuliah.nama_mk,
+                kode_mk: mataKuliah.kode_mk,
+                nama_ruang: ruangLama.nama_ruang,
+            },
+            ruang_baru: {
+                nama_ruang: ruangBaru.nama_ruang,
+                kode_ruang: ruangBaru.kode_ruang,
+            },
+        })
+        .from(pengajuanJadwal)
+        .innerJoin(users, eq(pengajuanJadwal.dosen_id, users.id))
+        .innerJoin(jadwal, eq(pengajuanJadwal.jadwal_id, jadwal.id))
+        .innerJoin(mataKuliah, eq(jadwal.mata_kuliah_id, mataKuliah.id))
+        .leftJoin(ruangLama, eq(jadwal.ruang_id, ruangLama.id))
+        .leftJoin(ruangBaru, eq(pengajuanJadwal.ruang_baru_id, ruangBaru.id))
+        .where(eq(pengajuanJadwal.id, Number(id)))
+
+    if (!report) throwError('Data pengajuan jadwal tidak ditemukan', 404)
+
+    // Hak Akses: Dosen hanya bisa melihat pengajuan miliknya sendiri
+    if (user.role === 'DOSEN' && report.dosen_id !== Number(user.id))
+        throwError('Akses ditolak, Anda tidak memiliki akses ke pengajuan data ini', 403)
+
+    return report
+}

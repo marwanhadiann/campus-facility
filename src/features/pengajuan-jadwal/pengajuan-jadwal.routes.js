@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as pengajuanController from './pengajuan-jadwal.controller.js';
 import { authenticateToken, authorizeRole } from '../../middlewares/auth.middleware.js';
-import { validate, createPengajuanSchema, evaluatePengajuanSchema } from '../../middlewares/validate.middleware.js';
+import { validate, createPengajuanSchema, evaluatePengajuanSchema, idParamSchema } from '../../middlewares/validate.middleware.js';
 
 const router = Router();
 
@@ -28,6 +28,18 @@ router.get(
     '/',
     authorizeRole('DOSEN', 'STAFF'),
     pengajuanController.getPengajuanList);
+
+/**
+ * @route   GET /api/pengajuan-jadwal/:id
+ * @desc    Melihat detail tracking pengajuan perubahan jadwal spesifik
+ * @access  Private (DOSEN, STAFF)
+ */
+router.get(
+    '/:id',
+    authorizeRole('DOSEN', 'STAFF'),
+    validate(idParamSchema),
+    pengajuanController.getPengajuanDetail
+)
 
 /**
  * @route   PATCH /api/pengajuan-jadwal/:id/approval
