@@ -4,6 +4,8 @@ import ruangRoutes from './features/ruang/ruang.routes.js'
 import fasilitasRoutes from './features/fasilitas/fasilitas.routes.js'
 import jadwalRoutes from './features/jadwal/jadwal.routes.js'
 import pengajuanJadwalRoutes from './features/pengajuan-jadwal/pengajuan-jadwal.routes.js';
+import pengaduanRoutes from './features/pengaduan/pengaduan.routes.js'
+import uploadRoutes from './features/upload/upload.routes.js'
 
 const router = Router()
 
@@ -12,5 +14,7 @@ router.use('/ruang', ruangRoutes)
 router.use('/fasilitas', fasilitasRoutes)
 router.use('/jadwal', jadwalRoutes)
 router.use('/pengajuan-jadwal', pengajuanJadwalRoutes)
+router.use('/pengaduan', pengaduanRoutes)
+router.use('/upload', uploadRoutes)
 
 export default router

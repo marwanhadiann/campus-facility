@@ -144,6 +144,7 @@ export const pengaduan = pgTable('pengaduan', {
         .references(() => users.id),
     judul: varchar('judul', { length: 150 }).notNull(),
     deskripsi: text('deskripsi').notNull(),
+    foto_url: text('foto_url'),
     status: statusPengaduanTypeEnum('status').default('OPEN').notNull(),
     prioritas: prioritasTypeEnum('prioritas').default('MEDIUM').notNull(),
     staff_id: bigint('staff_id', { mode: 'number' }).references(() => users.id),

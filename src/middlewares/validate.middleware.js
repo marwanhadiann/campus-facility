@@ -182,3 +182,53 @@ export const evaluatePengajuanSchema = z.object({
         catatan_staff: z.string().optional()
     })
 })
+
+// =========================================
+// 7. PENGADUAN SCHEMAS
+// =========================================
+export const createPengaduanSchema = z.object({
+    body: z.object({
+        fasilitas_ruang_id: z
+            .number({ required_error: 'Fasilitas Ruang ID tidak boleh kosong' })
+            .int('Fasilitas Ruang ID harus berupa angka bulat'),
+        judul: z
+            .string({ required_error: 'Judul pengaduan wajib diisi' })
+            .min(1, 'Judul Pengaduan tidak boleh kosong')
+            .max(150, 'Judul maksimal 150 karakter'),
+        deskripsi: z
+            .string({ required_error: 'Deskripsi wajib pengaduan diisi' })
+            .min(1, 'Deskripsi pengaduan tidak boleh kosong'),
+        foto_url: z
+            .string({ required_error: 'foto_url wajib diisi' })
+            .min(1, 'foto url tidak boleh kosong'),
+        prioritas: z
+            .enum(['LOW', 'MEDIUM', 'HIGH'], {
+                errorMap: () => ({ message: 'Prioritas harus LOW, MEDIUM, atau HIGH' })
+            })
+            .optional()
+    })
+})
+
+export const updatePengaduanSchema = z.object({
+    params: z.object({
+        id: z.string().regex(/^\d+$/, 'ID Pengaduan harus berupa angka').transform(Number),
+    }),
+    body: z.object({
+        status: z.enum(['OPEN', 'VERIFIED', 'IN_PROGRESS', 'RESOLVED'], {
+            errorMap: () => ({ message: 'Status harus OPEN, VERIFIED, IN_PROGRESS, atau RESOLVED' })
+        }),
+        catatan_staff: z.string().optional()
+    })
+        .refine(
+            (data) => {
+                if (data.status === 'RESOLVED') {
+                    return !!data.catatan_staff && data.catatan_staff.trim().length > 0
+                }
+                return true
+            },
+            {
+                message: 'Catatann penjelasan teknis dari staff wajib diisi saat menyelesaikan laporan (RESOLVED)',
+                path: ['catatan_staff']
+            }
+        )
+})
