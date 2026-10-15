@@ -12,7 +12,13 @@ export const validate = (schema) => (req, res, next) => {
         // Menimpa req dengan data yang sudah bersih dari field terlarang (Mass Assignment protection)
         if (parsed.body) req.body = parsed.body;
         if (parsed.params) Object.assign(req.params, parsed.params);
-        if (parsed.query) req.query = parsed.query;
+        if (parsed.query) {
+            for (const key in req.query) {
+                delete req.query[key]
+            }
+            Object.assign(req.query, parsed.query)
+        }
+
         next();
     } catch (error) {
         if (error instanceof z.ZodError || error?.name === 'ZodError') {
