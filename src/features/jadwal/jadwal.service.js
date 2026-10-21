@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm"
 import { db } from "../../db/index.js"
 import { jadwal, kelas, mataKuliah, ruang, users } from "../../db/schema.js"
+import { throwError } from '../../utils/error.utils.js'
 
 // Untuk menambahkan matkul (khusus staff)
 export const createMataKuliah = async (payload) => {
@@ -14,12 +15,31 @@ export const createMataKuliah = async (payload) => {
 
 // untuk menambahkan jadwal (khusus staff)
 export const createJadwal = async (payload) => {
+    const { kode_mk, nomor_induk, ...scheduleData } = payload
+    const [mk] = await db.select({ id: mataKuliah.id }).from(mataKuliah).where(eq(mataKuliah.kode_mk, kode_mk))
+    if (!mk) throwError('Mata kuliah tidak ditemukan', 404)
+
+    const [dosen] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.nomor_induk, nomor_induk), eq(users.role, 'DOSEN')))
+    if (!dosen) throwError('Dosen tidak ditemukan', 404)
+
     const [newJadwal] = await db
         .insert(jadwal)
-        .values(payload)
+        .values({ ...scheduleData, mata_kuliah_id: mk.id, dosen_id: dosen.id })
         .returning()
 
     return newJadwal
+}
+
+export const getJadwalOptions = async () => {
+    const [mataKuliahList, dosenList] = await Promise.all([
+        db.select({ kode_mk: mataKuliah.kode_mk, nama_mk: mataKuliah.nama_mk }).from(mataKuliah),
+        db.select({ nomor_induk: users.nomor_induk, nama: users.nama }).from(users).where(eq(users.role, 'DOSEN')),
+    ])
+
+    return { mata_kuliah: mataKuliahList, dosen: dosenList }
 }
 
 // Mengambil jadwal harian / Filter dgn JOIN data lengkap
@@ -53,6 +73,7 @@ export const getJadwalFiltered = async (filter) => {
                 lantai: ruang.lantai
             },
             dosen: {
+                nomor_induk: users.nomor_induk,
                 nama_dosen: users.nama,
                 email_dosen: users.email
             }

@@ -160,8 +160,8 @@ export const createMataKuliahSchema = z.object({
 
 export const createJadwalSchema = z.object({
     body: z.object({
-        mata_kuliah_id: z.number({ required_error: 'Mata kuliah ID wajib diisi' }).int(),
-        dosen_id: z.number({ required_error: 'Dosen ID wajib diisi' }).int(),
+        kode_mk: z.string({ required_error: 'Kode MK wajib dipilih' }).trim().min(1).max(10),
+        nomor_induk: z.string({ required_error: 'Nomor induk dosen wajib dipilih' }).trim().min(3).max(20),
         ruang_id: z.number({ required_error: 'Ruang ID wajib diisi' }).int(),
         kelas_id: z.number({ required_error: 'Kelas wajib dipilih' }).int().positive(),
         hari: z.enum(['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'], {

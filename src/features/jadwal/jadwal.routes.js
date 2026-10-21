@@ -17,6 +17,8 @@ router.get(
     validate(getJadwalQuerySchema),
     jadwalController.getJadwal)
 
+router.get('/options', jadwalController.getJadwalOptions)
+
 /**
  * @route   POST /api/jadwal/mata-kuliah
  * @desc    Menambahkan data mata kuliah baru
