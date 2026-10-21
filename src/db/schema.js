@@ -9,7 +9,8 @@ import {
     time,
     date,
     timestamp,
-    boolean
+    boolean,
+    index
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -90,6 +91,14 @@ export const ruang = pgTable('ruang', {
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
+// Table: kelas
+export const kelas = pgTable('kelas', {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    nama_kelas: varchar('nama_kelas', { length: 50 }).notNull().unique(),
+    created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
 // 3. Table: fasilitas_ruang
 export const fasilitasRuang = pgTable('fasilitas_ruang', {
     id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -126,13 +135,15 @@ export const jadwal = pgTable('jadwal', {
     ruang_id: bigint('ruang_id', { mode: 'number' })
         .notNull()
         .references(() => ruang.id),
-    kelas: varchar('kelas', { length: 10 }).notNull(),
+    kelas_id: bigint('kelas_id', { mode: 'number' })
+        .notNull()
+        .references(() => kelas.id),
     hari: hariTypeEnum('hari').notNull(),
     jam_mulai: time('jam_mulai').notNull(),
     jam_selesai: time('jam_selesai').notNull(),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
-});
+}, (table) => [index('jadwal_kelas_id_idx').on(table.kelas_id)]);
 
 // 6. Table: pengaduan
 export const pengaduan = pgTable('pengaduan', {
@@ -205,6 +216,10 @@ export const fasilitasRuangRelations = relations(fasilitasRuang, ({ one, many })
 }));
 
 export const jadwalRelations = relations(jadwal, ({ one, many }) => ({
+    kelas: one(kelas, {
+        fields: [jadwal.kelas_id],
+        references: [kelas.id],
+    }),
     mataKuliah: one(mataKuliah, {
         fields: [jadwal.mata_kuliah_id],
         references: [mataKuliah.id],
@@ -218,6 +233,10 @@ export const jadwalRelations = relations(jadwal, ({ one, many }) => ({
         references: [ruang.id],
     }),
     pengajuan: many(pengajuanJadwal),
+}));
+
+export const kelasRelations = relations(kelas, ({ many }) => ({
+    jadwal: many(jadwal),
 }));
 
 export const pengaduanRelations = relations(pengaduan, ({ one }) => ({

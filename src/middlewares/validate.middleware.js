@@ -96,7 +96,25 @@ export const updateRuangSchema = z.object({
 });
 
 // =========================================
-// 4. FASILITAS SCHEMAS
+// 4. KELAS SCHEMAS
+// =========================================
+export const createKelasSchema = z.object({
+    body: z.object({
+        nama_kelas: z.string().trim().min(1, 'Nama kelas wajib diisi').max(50),
+    }),
+});
+
+export const updateKelasSchema = z.object({
+    params: z.object({
+        id: z.string().regex(/^\d+$/, 'ID harus berupa angka').transform(Number),
+    }),
+    body: z.object({
+        nama_kelas: z.string().trim().min(1, 'Nama kelas wajib diisi').max(50),
+    }),
+});
+
+// =========================================
+// 5. FASILITAS SCHEMAS
 // =========================================
 export const getFasilitasByRuangSchema = z.object({
     params: z.object({
@@ -145,7 +163,7 @@ export const createJadwalSchema = z.object({
         mata_kuliah_id: z.number({ required_error: 'Mata kuliah ID wajib diisi' }).int(),
         dosen_id: z.number({ required_error: 'Dosen ID wajib diisi' }).int(),
         ruang_id: z.number({ required_error: 'Ruang ID wajib diisi' }).int(),
-        kelas: z.string().min(1, 'Kelas wajib diisi').max(10),
+        kelas_id: z.number({ required_error: 'Kelas wajib dipilih' }).int().positive(),
         hari: z.enum(['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU'], {
             errorMap: () => ({ message: "Hari harus SENIN, SELASA, RABU, KAMIS, JUMAT, atau SABTU" }),
         }),
@@ -186,6 +204,15 @@ export const evaluatePengajuanSchema = z.object({
             errorMap: () => ({ message: 'Status keputusan harus berupa APPROVED atau REJECTED' }),
         }),
         catatan_staff: z.string().optional()
+    })
+})
+
+export const getPengajuanListQuerySchema = z.object({
+    query: z.object({
+        page: z.string().regex(/^\d+$/).transform(Number).optional().default('1'),
+        limit: z.string().regex(/^\d+$/).transform(Number).optional().default('10'),
+        status: z.enum(['PENDING', 'APPROVED', 'REJECTED']).optional(),
+        search: z.string().optional(),
     })
 })
 

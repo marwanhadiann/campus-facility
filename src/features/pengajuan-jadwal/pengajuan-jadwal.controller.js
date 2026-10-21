@@ -21,15 +21,16 @@ export const createPengajuan = async (req, res, next) => {
     }
 };
 
-// Handler: Ambil Daftar Pengajuan (Dosen & Staff)
+// Handler: Ambil Daftar Pengajuan (Dosen & Staff) - dengan Server-Side Pagination
 export const getPengajuanList = async (req, res, next) => {
     try {
-        const data = await pengajuanService.getPengajuanList(req.user);
+        const { data, meta } = await pengajuanService.getPengajuanList(req.user, req.query);
 
         res.status(200).json({
             success: true,
             message: 'Berhasil mengambil daftar pengajuan jadwal',
             data,
+            meta,
         });
     } catch (error) {
         next(error);

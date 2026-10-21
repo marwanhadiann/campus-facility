@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm"
 import { db } from "../../db/index.js"
-import { jadwal, mataKuliah, ruang, users } from "../../db/schema.js"
+import { jadwal, kelas, mataKuliah, ruang, users } from "../../db/schema.js"
 
 // Untuk menambahkan matkul (khusus staff)
 export const createMataKuliah = async (payload) => {
@@ -24,20 +24,21 @@ export const createJadwal = async (payload) => {
 
 // Mengambil jadwal harian / Filter dgn JOIN data lengkap
 export const getJadwalFiltered = async (filter) => {
-    const { hari, ruang_id, kelas, dosen_id } = filter
+    const { hari, ruang_id, kelas: namaKelas, dosen_id } = filter
 
     // menyiapkan array kondisi query
     const condition = []
     if (hari) condition.push(eq(jadwal.hari, hari.toUpperCase()));
     if (ruang_id) condition.push(eq(jadwal.ruang_id, Number(ruang_id)));
-    if (kelas) condition.push(eq(jadwal.kelas, kelas));
+    if (namaKelas) condition.push(eq(kelas.nama_kelas, namaKelas));
     if (dosen_id) condition.push(eq(jadwal.dosen_id, Number(dosen_id)));
 
     // query join table mata_kuliah, dosen, dan ruang
     return await db
         .select({
             jadwal_id: jadwal.id,
-            kelas: jadwal.kelas,
+            kelas_id: jadwal.kelas_id,
+            kelas: kelas.nama_kelas,
             hari: jadwal.hari,
             jam_mulai: jadwal.jam_mulai,
             jam_selesai: jadwal.jam_selesai,
@@ -57,6 +58,7 @@ export const getJadwalFiltered = async (filter) => {
             }
         })
         .from(jadwal)
+        .innerJoin(kelas, eq(jadwal.kelas_id, kelas.id))
         .innerJoin(mataKuliah, eq(jadwal.mata_kuliah_id, mataKuliah.id))
         .innerJoin(ruang, eq(jadwal.ruang_id, ruang.id))
         .innerJoin(users, eq(jadwal.dosen_id, users.id))

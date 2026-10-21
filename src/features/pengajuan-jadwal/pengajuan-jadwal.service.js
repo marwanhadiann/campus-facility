@@ -1,6 +1,6 @@
-import { eq, and, or, lte, gte, aliasedTable } from 'drizzle-orm';
+import { eq, and, or, lte, gte, aliasedTable, count, ilike, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { pengajuanJadwal, jadwal, ruang, users, mataKuliah, notifikasi } from '../../db/schema.js';
+import { pengajuanJadwal, jadwal, kelas, ruang, users, mataKuliah, notifikasi } from '../../db/schema.js';
 import { throwError } from '../../utils/error.utils.js';
 import { checkRoomConflict } from '../../utils/schedule.utils.js';
 
@@ -37,8 +37,21 @@ export const createPengajuan = async (payload) => {
     return newPengajuan;
 };
 
-// 2. Mengambil Daftar Pengajuan Jadwal (Dengan Join Detail)
-export const getPengajuanList = async (user) => {
+// 2. Mengambil Daftar Pengajuan Jadwal dengan Server-Side Pagination
+export const getPengajuanList = async (user, query) => {
+    const {
+        page = 1,
+        limit = 10,
+        status,
+        search,
+    } = query;
+
+    // Validasi & batasi nilai limit maksimal 100 (mencegah abuse)
+    const safePage = Math.max(1, Number(page));
+    const safeLimit = Math.min(100, Math.max(1, Number(limit)));
+    const offset = (safePage - 1) * safeLimit;
+
+    // Bangun kondisi WHERE secara dinamis
     const conditions = [];
 
     // Jika yang mengakses adalah DOSEN, tampilkan pengajuan miliknya saja
@@ -46,7 +59,28 @@ export const getPengajuanList = async (user) => {
         conditions.push(eq(pengajuanJadwal.dosen_id, Number(user.id)));
     }
 
-    return await db
+    // Filter berdasarkan status (PENDING / APPROVED / REJECTED)
+    if (status) {
+        conditions.push(eq(pengajuanJadwal.status, status));
+    }
+
+    // Pencarian berdasarkan nama dosen (case-insensitive)
+    if (search && search.trim() !== '') {
+        conditions.push(ilike(users.nama, `%${search.trim()}%`));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Query 1: Ambil total data untuk menghitung total_pages
+    const [{ total }] = await db
+        .select({ total: count() })
+        .from(pengajuanJadwal)
+        .innerJoin(users, eq(pengajuanJadwal.dosen_id, users.id))
+        .leftJoin(ruang, eq(pengajuanJadwal.ruang_baru_id, ruang.id))
+        .where(whereClause);
+
+    // Query 2: Ambil data aktual dengan LIMIT & OFFSET
+    const data = await db
         .select({
             id: pengajuanJadwal.id,
             tanggal_baru: pengajuanJadwal.tanggal_baru,
@@ -55,6 +89,7 @@ export const getPengajuanList = async (user) => {
             alasan: pengajuanJadwal.alasan,
             status: pengajuanJadwal.status,
             catatan_staff: pengajuanJadwal.catatan_staff,
+            created_at: pengajuanJadwal.created_at,
             dosen: {
                 nama: users.nama,
                 email: users.email,
@@ -67,7 +102,25 @@ export const getPengajuanList = async (user) => {
         .from(pengajuanJadwal)
         .innerJoin(users, eq(pengajuanJadwal.dosen_id, users.id))
         .leftJoin(ruang, eq(pengajuanJadwal.ruang_baru_id, ruang.id))
-        .where(conditions.length > 0 ? and(...conditions) : undefined);
+        .where(whereClause)
+        .orderBy(sql`${pengajuanJadwal.created_at} DESC`)
+        .limit(safeLimit)
+        .offset(offset);
+
+    const totalItems = Number(total);
+    const totalPages = Math.ceil(totalItems / safeLimit);
+
+    return {
+        data,
+        meta: {
+            page: safePage,
+            limit: safeLimit,
+            total_items: totalItems,
+            total_pages: totalPages,
+            has_next_page: safePage < totalPages,
+            has_prev_page: safePage > 1,
+        },
+    };
 };
 
 // 3. Evaluasi Keputusan Staff (APPROVED / REJECTED)
@@ -103,8 +156,9 @@ export const evaluatePengajuan = async (id, staffId, payload) => {
     }
 
     const [jadwalLama] = await db
-        .select()
+        .select({ kelas: kelas.nama_kelas })
         .from(jadwal)
+        .innerJoin(kelas, eq(jadwal.kelas_id, kelas.id))
         .where(eq(jadwal.id, pengajuan.jadwal_id))
 
     return await db.transaction(async (tx) => {

@@ -29,6 +29,16 @@ router.post(
     authController.login)
 
 /**
+ * @route   GET /api/auth/me
+ * @desc    Ambil user dari token aktif
+ * @access  Private
+ */
+router.get(
+    '/me',
+    authenticateToken,
+    authController.me)
+
+/**
  * @route   POST /api/auth/logout
  * @desc    Logout pengguna & hapus token JWT dari HttpOnly Cookie
  * @access  Private / Protected

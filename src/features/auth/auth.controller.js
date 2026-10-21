@@ -40,6 +40,20 @@ export const login = async (req, res, next) => {
     }
 }
 
+// Handler Current User
+export const me = async (req, res, next) => {
+    try {
+        const user = await authService.getCurrentUser(req.user.id)
+
+        res.json({
+            success: true,
+            data: user
+        })
+    } catch (error) {
+        next(error)
+    }
+}
+
 // Handler Logout untuk menghapus cookie
 export const logout = (req, res, next) => {
     try {

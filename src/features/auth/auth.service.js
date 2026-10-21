@@ -82,3 +82,23 @@ export const loginUser = async (email, password) => {
         token,
     }
 }
+
+// Service : Get Current User
+export const getCurrentUser = async (userId) => {
+    const [user] = await db
+        .select({
+            id: users.id,
+            nomor_induk: users.nomor_induk,
+            nama: users.nama,
+            email: users.email,
+            role: users.role,
+        })
+        .from(users)
+        .where(eq(users.id, userId))
+
+    if (!user) {
+        throwError('User tidak ditemukan', 404)
+    }
+
+    return user
+}
