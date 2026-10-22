@@ -76,6 +76,7 @@ export const users = pgTable('users', {
     email: varchar('email', { length: 100 }).notNull().unique(),
     password: varchar('password', { length: 255 }).notNull(),
     role: roleTypeEnum('role').notNull(),
+    kelas_id: bigint('kelas_id', {mode: 'number'}).references(() => kelas.id),
     created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -237,6 +238,7 @@ export const jadwalRelations = relations(jadwal, ({ one, many }) => ({
 
 export const kelasRelations = relations(kelas, ({ many }) => ({
     jadwal: many(jadwal),
+    mahasiswa: many(users)
 }));
 
 export const pengaduanRelations = relations(pengaduan, ({ one }) => ({
@@ -277,5 +279,12 @@ export const notifikasiRelations = relations(notifikasi, ({ one }) => ({
     user: one(users, {
         fields: [notifikasi.user_id],
         references: [users.id],
+    }),
+}));
+
+export const usersRelations = relations(users, ({one}) => ({
+    kelas: one(kelas, {
+        fields: [users.kelas_id],
+        references: [kelas.id],
     }),
 }));

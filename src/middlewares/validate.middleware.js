@@ -57,7 +57,21 @@ export const registerSchema = z.object({
         role: z.enum(['MAHASISWA', 'DOSEN', 'STAFF'], {
             errorMap: () => ({ message: "Role harus MAHASISWA, DOSEN, atau STAFF" }),
         }),
-    }),
+        kelas_id: z.number().int('Kelas ID harus berupa angka bulat').positive().optional(),
+    })
+        .superRefine((data, ctx) => {
+            if (data.role === 'MAHASISWA' && !data.kelas_id) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    message: 'Kelas wajib dipilih untuk pendaftaran Mahasiswa',
+                    path: ['kelas_id']
+                })
+            }
+        })
+        .transform((data) => ({
+            ...data,
+            kelas_id: data.role === 'MAHASISWA' ? data.kelas_id : null
+        }))
 });
 
 export const loginSchema = z.object({
