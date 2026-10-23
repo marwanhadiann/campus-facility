@@ -279,3 +279,50 @@ export const updatePengaduanSchema = z.object({
             }
         )
 })
+
+
+// =========================================
+// 8. USER SCHEMAS (RUD)
+// =========================================
+
+export const getUsersQuerySchema = z.object({
+    query: z.object({
+        role: z.enum(['MAHASISWA', 'DOSEN', 'STAFF']).optional(),
+        search: z.string().optional(), // Opsional: Untuk pencarian nama atau nomor induk
+        kelas_id: z.string().regex(/^\d+$/).transform(Number).optional(),
+        page: z.string().regex(/^\d+$/).transform(Number).optional().default('1'),
+        limit: z.string().regex(/^\d+$/).transform(Number).optional().default('10'),
+    })
+});
+
+export const updateUserSchema = z.object({
+    params: z.object({
+        id: z.string().regex(/^\d+$/, 'ID user harus berupa angka').transform(Number),
+    }),
+    body: z.object({
+        nomor_induk: z.string().min(3, 'Nomor induk minimal 3 karakter').max(20).optional(),
+        nama: z.string().min(2, 'Nama minimal 2 karakter').max(100).optional(),
+        email: z.string().email('Format email tidak valid').optional(),
+        role: z.enum(['MAHASISWA', 'DOSEN', 'STAFF']).optional(),
+        kelas_id: z.number().int().positive().optional().nullable(),
+        password: z.string().min(8, 'Password minimal 8 karakter').optional().or(z.literal('')),
+    }).superRefine((data, ctx) => {
+        // Jika role diubah menjadi MAHASISWA, kelas_id harus diisi
+        if (data.role === 'MAHASISWA' && !data.kelas_id) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "Kelas wajib dipilih jika role adalah Mahasiswa",
+                path: ["kelas_id"]
+            });
+        }
+    }).transform((data) => {
+        // Bersihkan kelas_id jika role yang dikirim/diupdate bukan MAHASISWA
+        if (data.role && data.role !== 'MAHASISWA') {
+            return { ...data, kelas_id: null };
+        }
+
+        // Bersihkan password jika dikirim string kosong(tidak diubah)
+        if(!data.password) delete data.password
+        return data;
+    }),
+});

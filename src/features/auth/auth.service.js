@@ -1,5 +1,5 @@
 import { eq, or } from "drizzle-orm"
-import { users } from "../../db/schema.js"
+import { kelas, users } from "../../db/schema.js"
 import { generateToken } from "../../utils/jwt.js"
 import { db } from "../../db/index.js";
 import bcrypt from "bcryptjs";
@@ -7,7 +7,7 @@ import { throwError } from "../../utils/error.utils.js";
 
 // Service : Register User
 export const registerUser = async (newData) => {
-    const { nomor_induk, nama, email, password, role } = newData
+    const { nomor_induk, nama, email, password, role, kelas_id } = newData
 
     // cek email dan no induk sudah terdaftar
     const existingUser = await db
@@ -34,7 +34,8 @@ export const registerUser = async (newData) => {
             nama,
             email,
             password: hashPassword,
-            role
+            role,
+            kelas_id
         })
         .returning({
             id: users.id,
@@ -42,6 +43,7 @@ export const registerUser = async (newData) => {
             nama: users.nama,
             email: users.email,
             role: users.role,
+            kelas: users.kelas_id
         })
 
     return newUser;
@@ -69,7 +71,8 @@ export const loginUser = async (email, password) => {
     const token = generateToken({
         id: user.id,
         role: user.role,
-        email: user.email
+        email: user.email,
+        kelas: user.kelas_id
     })
     return {
         user: {
@@ -77,7 +80,8 @@ export const loginUser = async (email, password) => {
             nomor_induk: user.nomor_induk,
             nama: user.nama,
             email: user.email,
-            role: user.role
+            role: user.role,
+            kelas: user.kelas_id
         },
         token,
     }
@@ -92,6 +96,7 @@ export const getCurrentUser = async (userId) => {
             nama: users.nama,
             email: users.email,
             role: users.role,
+            kelas: users.kelas_id
         })
         .from(users)
         .where(eq(users.id, userId))
