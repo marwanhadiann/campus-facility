@@ -41,7 +41,7 @@ export const getJadwalOptions = async (req, res, next) => {
 // Handler : Pencarian dan filter jadwal harian
 export const getJadwal = async (req, res, next) => {
     try {
-        const data = await jadwalService.getJadwalFiltered(req.query)
+        const data = await jadwalService.getJadwalFiltered(req.query, req.user)
 
         res.status(200).json({
             success: true,

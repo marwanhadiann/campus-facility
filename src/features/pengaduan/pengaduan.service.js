@@ -2,11 +2,12 @@ import { and, desc, eq, inArray } from "drizzle-orm"
 import { fasilitasRuang, pengaduan, ruang } from "../../db/schema.js"
 import { throwError } from "../../utils/error.utils.js"
 import { db } from "../../db/index.js"
+import { assertRuangAccess } from '../ruang/ruang.service.js'
 
 
 // 1. Endpoint POST /pengaduan (Mahasiswa/Dosen)
 export const createPengaduan = async (payload) => {
-    const { fasilitas_ruang_id, pelapor_id, judul, deskripsi, foto_url, prioritas } = payload
+    const { fasilitas_ruang_id, pelapor_id, judul, deskripsi, foto_url, prioritas, user } = payload
 
 
     // Validasi Keberadaan Fasilitas Ruang di Database
@@ -18,6 +19,7 @@ export const createPengaduan = async (payload) => {
     if (existingFasilitas.length === 0) {
         throwError('Data fasilitas ruang tidak ditemukan', 404);
     }
+    await assertRuangAccess(existingFasilitas[0].ruang_id, user)
 
     // Validasi cek duplikasi laporan aktif
     const activeReport = await db
@@ -92,10 +94,23 @@ export const updateStatusPengaduan = async (id, payload) => {
 // Historical Tracking / Riwayat Perbaikan
 export const getRiwayatPerbaikan = async () => {
     return await db
-        .select()
+        .select({
+            id: pengaduan.id,
+            judul: pengaduan.judul,
+            deskripsi: pengaduan.deskripsi,
+            foto_url: pengaduan.foto_url,
+            status: pengaduan.status,
+            prioritas: pengaduan.prioritas,
+            catatan_staff: pengaduan.catatan_staff,
+            created_at: pengaduan.created_at,
+            updated_at: pengaduan.updated_at,
+            nama_ruang: ruang.nama_ruang,
+            nama_fasilitas: fasilitasRuang.nama_fasilitas
+        })
         .from(pengaduan)
-        .where(eq(pengaduan.status, 'RESOLVED'))
-        .orderBy(desc(pengaduan.updated_at))
+        .innerJoin(fasilitasRuang, eq(pengaduan.fasilitas_ruang_id, fasilitasRuang.id))
+        .innerJoin(ruang, eq(fasilitasRuang.ruang_id, ruang.id))
+        .orderBy(desc(pengaduan.created_at))
 }
 
 // Ambil seluruh pengaduan milik pelapor
@@ -103,6 +118,7 @@ export const getMyPengaduan = async (userId) => {
     return await db
         .select({
             id: pengaduan.id,
+            fasilitas_ruang_id: pengaduan.fasilitas_ruang_id,
             judul: pengaduan.judul,
             deskripsi: pengaduan.deskripsi,
             foto_url: pengaduan.foto_url,

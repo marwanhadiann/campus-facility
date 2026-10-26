@@ -9,6 +9,7 @@ export const createPengaduan = async (req, res, next) => {
         const data = await pengaduanService.createPengaduan({
             ...req.body,
             pelapor_id: pelaporId,
+            user: req.user,
         });
 
         res.status(201).json({

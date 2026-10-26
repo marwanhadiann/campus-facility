@@ -4,7 +4,7 @@ import * as ruangService from "./ruang.service.js";
 //Handler : ambil semua data ruangan
 export const getRuangList = async (req, res, next) => {
     try {
-        const data = await ruangService.getAllRuang()
+        const data = await ruangService.getAllRuang(req.user)
         res.status(200).json({
             success: true,
             message: 'Berhasil mengambil data ruangan',
@@ -19,7 +19,7 @@ export const getRuangList = async (req, res, next) => {
 export const getRuangById = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const data = await ruangService.getRuangById(id);
+        const data = await ruangService.getRuangById(id, req.user);
 
         res.status(200).json({
             success: true,

@@ -1,10 +1,11 @@
-import { eq } from "drizzle-orm"
+import { and, eq, inArray } from "drizzle-orm"
 import { db } from "../../db/index.js"
-import { fasilitasRuang, ruang } from "../../db/schema.js"
+import { fasilitasRuang, pengaduan, ruang } from "../../db/schema.js"
 import { throwError } from "../../utils/error.utils.js"
+import { assertRuangAccess } from '../ruang/ruang.service.js'
 
 // Mengambil daftar fasilitas berdasarkan id ruangan
-export const getFasilitasByRuangId = async (ruangId) => {
+export const getFasilitasByRuangId = async (ruangId, user) => {
     // pengecekan id ruangan ke database
     const [existingRuang] = await db
         .select()
@@ -13,12 +14,34 @@ export const getFasilitasByRuangId = async (ruangId) => {
 
     //jika tidak ada kembalikan null
     if (!existingRuang) throwError('Data ruangan tidak ditemukan', 404)
+    await assertRuangAccess(ruangId, user)
 
-    // jika id ruangan yang dicari ada ambil data fasilitas nya
-    return await db
+    // ambil data fasilitas
+    const fasilitas = await db
         .select()
         .from(fasilitasRuang)
         .where(eq(fasilitasRuang.ruang_id, Number(ruangId)))
+
+    if (fasilitas.length === 0) return []
+
+    const fasilitasId = fasilitas.map(f => f.id)
+
+    const activeReport = await db
+        .select({ fasilitas_ruang_id: pengaduan.fasilitas_ruang_id })
+        .from(pengaduan)
+        .where(
+            and(
+                inArray(pengaduan.fasilitas_ruang_id, fasilitasId),
+                inArray(pengaduan.status, ['OPEN', 'VERIFIED', 'IN_PROGRESS'])
+            )
+        )
+
+    const activeReportId = new Set(activeReport.map(r => r.fasilitas_ruang_id))
+
+    return fasilitas.map(f => ({
+        ...f,
+        is_reported: activeReportId.has(f.id)
+    }))
 }
 
 // Menambahkan fasilitas ruangan (Khusus staff)

@@ -4,7 +4,7 @@ import * as fasilitasService from './fasilitas.service.js'
 export const getFasilitasByRuang = async (req, res, next) => {
     try {
         const { ruangId } = req.params
-        const data = await fasilitasService.getFasilitasByRuangId(ruangId)
+        const data = await fasilitasService.getFasilitasByRuangId(ruangId, req.user)
 
         res.status(200).json({
             success: true,

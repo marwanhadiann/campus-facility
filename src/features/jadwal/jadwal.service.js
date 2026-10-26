@@ -43,15 +43,27 @@ export const getJadwalOptions = async () => {
 }
 
 // Mengambil jadwal harian / Filter dgn JOIN data lengkap
-export const getJadwalFiltered = async (filter) => {
+export const getJadwalFiltered = async (filter, user) => {
     const { hari, ruang_id, kelas: namaKelas, dosen_id } = filter
 
     // menyiapkan array kondisi query
     const condition = []
+    if (user.role === 'MAHASISWA') {
+        // Mahasiswa HANYA boleh melihat jadwal kelasnya sendiri.
+        if (!user.kelas) throwError('Akses ditolak, Data kelas Mahasiswa tidak valid', 403)
+        condition.push(eq(jadwal.kelas_id, Number(user.kelas)))
+    } else if (user.role === 'DOSEN') {
+        // Dosen HANYA boleh melihat jadwal yang diajarnya.
+        condition.push(eq(jadwal.dosen_id, user.id))
+    } else {
+        // STAFF bebas melihat semuanya, sehingga filter dari query frontend tetap diaktifkan
+        if (namaKelas) condition.push(eq(kelas.nama_kelas, namaKelas));
+        if (dosen_id) condition.push(eq(jadwal.dosen_id, Number(dosen_id)));
+    }
+
+    //Filter umum (Hari dan Ruangan) yang aman dipakai untuk semua role
     if (hari) condition.push(eq(jadwal.hari, hari.toUpperCase()));
     if (ruang_id) condition.push(eq(jadwal.ruang_id, Number(ruang_id)));
-    if (namaKelas) condition.push(eq(kelas.nama_kelas, namaKelas));
-    if (dosen_id) condition.push(eq(jadwal.dosen_id, Number(dosen_id)));
 
     // query join table mata_kuliah, dosen, dan ruang
     return await db

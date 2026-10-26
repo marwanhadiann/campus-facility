@@ -19,6 +19,16 @@ export const createPengajuan = async (payload) => {
         throwError('Jadwal perkuliahan tidak ditemukan atau bukan milik Anda', 404);
     }
 
+    const [existingPengajuan] = await db
+        .select({ id: pengajuanJadwal.id })
+        .from(pengajuanJadwal)
+        .where(eq(pengajuanJadwal.jadwal_id, Number(jadwal_id)))
+        .limit(1)
+
+    if (existingPengajuan) {
+        throwError('Jadwal ini sudah pernah diajukan dan tidak dapat diajukan lagi', 400)
+    }
+
     // Insert pengajuan baru (Status default: PENDING)
     const [newPengajuan] = await db
         .insert(pengajuanJadwal)
@@ -83,6 +93,7 @@ export const getPengajuanList = async (user, query) => {
     const data = await db
         .select({
             id: pengajuanJadwal.id,
+            jadwal_id: pengajuanJadwal.jadwal_id,
             tanggal_baru: pengajuanJadwal.tanggal_baru,
             jam_mulai_baru: pengajuanJadwal.jam_mulai_baru,
             jam_selesai_baru: pengajuanJadwal.jam_selesai_baru,
