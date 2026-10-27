@@ -326,3 +326,12 @@ export const updateUserSchema = z.object({
         return data;
     }),
 });
+
+
+export const getNotifikasiListQuerySchema = z.object({
+    query: z.object({
+        page: z.string().optional(),
+        limit: z.string().optional(),
+        is_read: z.enum(['true', 'false', '']).optional(),
+    }).optional(),
+});

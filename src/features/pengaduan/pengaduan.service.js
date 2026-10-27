@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray } from "drizzle-orm"
-import { fasilitasRuang, pengaduan, ruang } from "../../db/schema.js"
+import { fasilitasRuang, notifikasi, pengaduan, ruang } from "../../db/schema.js"
 import { throwError } from "../../utils/error.utils.js"
 import { db } from "../../db/index.js"
 import { assertRuangAccess } from '../ruang/ruang.service.js'
@@ -88,6 +88,22 @@ export const updateStatusPengaduan = async (id, payload) => {
             })
             .where(eq(fasilitasRuang.id, updatePengaduan.fasilitas_ruang_id))
     }
+
+    // BUAT NOTIFIKASI UNTUK PELAPOR (MAHASISWA / DOSEN)
+    const statusTextMap = {
+        VERIFIED: 'telah diverifikasi',
+        IN_PROGRESS: 'sedang dalam proses perbaikan',
+        RESOLVED: 'telah selesai diperbaiki',
+    };
+
+    if (statusTextMap[status]) {
+        await db.insert(notifikasi).values({
+            user_id: updatePengaduan.mahasiswa_id,
+            judul: `Status Pengaduan: ${status}`,
+            pesan: `Pengaduan fasilitas "${updatePengaduan.judul}" ${statusTextMap[status]}. ${catatan_staff ? 'Catatan staff: ' + catatan_staff : ''}`.trim(),
+            dibaca: false,
+        });
+    }
     return updatePengaduan
 }
 
@@ -167,3 +183,5 @@ export const getPengaduanDetail = async (id, user) => {
 
     return report
 }
+
+

@@ -8,6 +8,7 @@ import pengajuanJadwalRoutes from './features/pengajuan-jadwal/pengajuan-jadwal.
 import pengaduanRoutes from './features/pengaduan/pengaduan.routes.js'
 import uploadRoutes from './features/upload/upload.routes.js'
 import userRoutes from './features/user/user.routes.js'
+import notifikasiRoutes from './features/notifikasi/notifikasi.routes.js'
 
 const router = Router()
 
@@ -20,5 +21,6 @@ router.use('/pengajuan-jadwal', pengajuanJadwalRoutes)
 router.use('/pengaduan', pengaduanRoutes)
 router.use('/upload', uploadRoutes)
 router.use('/users', userRoutes)
+router.use('/notifikasi', notifikasiRoutes)
 
 export default router
