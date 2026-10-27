@@ -167,9 +167,13 @@ export const evaluatePengajuan = async (id, staffId, payload) => {
     }
 
     const [jadwalLama] = await db
-        .select({ kelas: kelas.nama_kelas })
+        .select({ 
+            kelas: kelas.nama_kelas, 
+            nama_mk: mataKuliah.nama_mk 
+        })
         .from(jadwal)
         .innerJoin(kelas, eq(jadwal.kelas_id, kelas.id))
+        .innerJoin(mataKuliah, eq(jadwal.mata_kuliah_id, mataKuliah.id))
         .where(eq(jadwal.id, pengajuan.jadwal_id))
 
     return await db.transaction(async (tx) => {
