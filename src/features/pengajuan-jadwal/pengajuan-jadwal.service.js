@@ -67,6 +67,8 @@ export const getPengajuanList = async (user, query) => {
     // Jika yang mengakses adalah DOSEN, tampilkan pengajuan miliknya saja
     if (user.role === 'DOSEN') {
         conditions.push(eq(pengajuanJadwal.dosen_id, Number(user.id)));
+    } else if (user.role === 'MAHASISWA'){
+        conditions.push(eq(pengajuanJadwal.status, 'APPROVED'));
     }
 
     // Filter berdasarkan status (PENDING / APPROVED / REJECTED)

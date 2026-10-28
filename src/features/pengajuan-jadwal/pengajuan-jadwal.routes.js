@@ -27,7 +27,7 @@ router.post(
  */
 router.get(
     '/',
-    authorizeRole('DOSEN', 'STAFF'),
+    authorizeRole('DOSEN', 'STAFF', 'MAHASISWA'),
     validate(getPengajuanListQuerySchema),
     pengajuanController.getPengajuanList);
 
