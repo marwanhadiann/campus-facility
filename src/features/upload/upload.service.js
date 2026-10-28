@@ -8,6 +8,6 @@ export const processUploadFoto = (file) => {
     }
 
     return {
-        url: `uploads/${file.filename}`
+        url: `/uploads/${file.filename}`
     }
 }
