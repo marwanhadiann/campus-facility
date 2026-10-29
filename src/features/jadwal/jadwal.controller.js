@@ -52,3 +52,16 @@ export const getJadwal = async (req, res, next) => {
         next(error)
     }
 }
+
+export const updateJadwal = async (req, res, next) => {
+    try {
+        const data = await jadwalService.updateJadwal(req.params.id, req.body)
+        res.status(200).json({
+            success: true,
+            message: 'Jadwal perkuliahan berhasil diperbarui',
+            data
+        })
+    } catch (error) {
+        next(error)
+    }
+}

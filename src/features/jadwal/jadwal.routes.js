@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticateToken, authorizeRole } from "../../middlewares/auth.middleware.js";
 import * as jadwalController from './jadwal.controller.js'
-import { createJadwalSchema, createMataKuliahSchema, getJadwalQuerySchema, validate } from "../../middlewares/validate.middleware.js";
+import { createJadwalSchema, createMataKuliahSchema, getJadwalQuerySchema, updateJadwalSchema, validate } from "../../middlewares/validate.middleware.js";
 
 const router = Router()
 
@@ -40,5 +40,17 @@ router.post(
     authorizeRole('STAFF'),
     validate(createJadwalSchema),
     jadwalController.createJadwal)
+
+    /**
+ * @route   PATCH /api/jadwal/:id
+ * @desc    Memperbarui data jadwal perkuliahan
+ * @access  Private (Khusus Staff)
+ */
+router.patch(
+    '/:id',
+    authorizeRole('STAFF'),
+    validate(updateJadwalSchema),
+    jadwalController.updateJadwal
+)
 
 export default router

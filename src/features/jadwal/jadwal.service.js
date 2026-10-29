@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm"
+import { and, eq, ne } from "drizzle-orm"
 import { db } from "../../db/index.js"
 import { jadwal, kelas, mataKuliah, ruang, users } from "../../db/schema.js"
 import { throwError } from '../../utils/error.utils.js'
@@ -24,6 +24,15 @@ export const createJadwal = async (payload) => {
         .from(users)
         .where(and(eq(users.nomor_induk, nomor_induk), eq(users.role, 'DOSEN')))
     if (!dosen) throwError('Dosen tidak ditemukan', 404)
+
+    const [existingJadwal] = await db
+        .select({ id: jadwal.id })
+        .from(jadwal)
+        .where(and(eq(jadwal.mata_kuliah_id, mk.id), eq(jadwal.kelas_id, scheduleData.kelas_id)))
+
+    if (existingJadwal) {
+        throwError('Mata kuliah ini sudah memiliki jadwal pada kelas yang dipilih', 400)
+    }
 
     const [newJadwal] = await db
         .insert(jadwal)
@@ -96,4 +105,53 @@ export const getJadwalFiltered = async (filter, user) => {
         .innerJoin(ruang, eq(jadwal.ruang_id, ruang.id))
         .innerJoin(users, eq(jadwal.dosen_id, users.id))
         .where(condition.length > 0 ? and(...condition) : undefined)
+}
+
+// Update jadwal oleh Staff
+export const updateJadwal = async (id, payload) => {
+    const [targetJadwal] = await db.select().from(jadwal).where(eq(jadwal.id, id))
+    if (!targetJadwal) throwError('Jadwal tidak ditemukan', 404)
+
+    let mata_kuliah_id = targetJadwal.mata_kuliah_id
+    let dosen_id = targetJadwal.dosen_id
+
+    if (payload.kode_mk) {
+        const [mk] = await db.select({ id: mataKuliah.id }).from(mataKuliah).where(eq(mataKuliah.kode_mk, payload.kode_mk))
+        if (!mk) throwError('Mata kuliah tidak ditemukan', 404)
+        mata_kuliah_id = mk.id
+    }
+
+    if (payload.nomor_induk) {
+        const [dosen] = await db.select({ id: users.id }).from(users).where(and(eq(users.nomor_induk, payload.nomor_induk), eq(users.role, 'DOSEN')))
+        if (!dosen) throwError('Dosen tidak ditemukan', 404)
+        dosen_id = dosen.id
+    }
+
+    const targetKelasId = payload.kelas_id || targetJadwal.kelas_id
+
+    // Validasi duplikasi matkul & kelas pada ID jadwal lain
+    const [existingJadwal] = await db
+        .select({ id: jadwal.id })
+        .from(jadwal)
+        .where(
+            and(
+                eq(jadwal.mata_kuliah_id, mata_kuliah_id),
+                eq(jadwal.kelas_id, targetKelasId),
+                ne(jadwal.id, id)
+            )
+        )
+
+    if (existingJadwal) {
+        throwError('Mata kuliah ini sudah terdaftar pada kelas tersebut di jadwal lain', 400)
+    }
+
+    const { kode_mk, nomor_induk, ...updateData } = payload
+
+    const [updated] = await db
+        .update(jadwal)
+        .set({ ...updateData, mata_kuliah_id, dosen_id, updated_at: new Date() })
+        .where(eq(jadwal.id, id))
+        .returning()
+
+    return updated
 }

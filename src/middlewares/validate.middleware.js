@@ -195,6 +195,21 @@ export const getJadwalQuerySchema = z.object({
     }),
 });
 
+export const updateJadwalSchema = z.object({
+    params: z.object({
+        id: z.string().regex(/^\d+$/, 'ID jadwal harus berupa angka').transform(Number),
+    }),
+    body: z.object({
+        kode_mk: z.string().trim().min(1).max(10).optional(),
+        nomor_induk: z.string().trim().min(3).max(20).optional(),
+        ruang_id: z.number().int().optional(),
+        kelas_id: z.number().int().positive().optional(),
+        hari: z.enum(['SENIN', 'SELASA', 'RABU', 'KAMIS', 'JUMAT', 'SABTU']).optional(),
+        jam_mulai: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/).optional(),
+        jam_selesai: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/).optional(),
+    }),
+});
+
 // =========================================
 // 6. PENGAJUAN JADWAL SCHEMAS
 // =========================================
