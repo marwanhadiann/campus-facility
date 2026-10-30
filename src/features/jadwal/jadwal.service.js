@@ -1,7 +1,8 @@
-import { and, eq, ne } from "drizzle-orm"
+import { and, desc, eq, ne } from "drizzle-orm"
 import { db } from "../../db/index.js"
 import { jadwal, kelas, mataKuliah, ruang, users } from "../../db/schema.js"
 import { throwError } from '../../utils/error.utils.js'
+import { checkJadwalRegulerConflict } from "../../utils/schedule.utils.js"
 
 // Untuk menambahkan matkul (khusus staff)
 export const createMataKuliah = async (payload) => {
@@ -25,15 +26,20 @@ export const createJadwal = async (payload) => {
         .where(and(eq(users.nomor_induk, nomor_induk), eq(users.role, 'DOSEN')))
     if (!dosen) throwError('Dosen tidak ditemukan', 404)
 
-    const [existingJadwal] = await db
-        .select({ id: jadwal.id })
-        .from(jadwal)
-        .where(and(eq(jadwal.mata_kuliah_id, mk.id), eq(jadwal.kelas_id, scheduleData.kelas_id)))
+    const conflict = await checkJadwalRegulerConflict({
+        mataKuliahId: mk.id,
+        kelasId: scheduleData.kelas_id,
+        dosenId: dosen.id,
+        ruangId: scheduleData.ruang_id,
+        hari: scheduleData.hari,
+        jamMulai: scheduleData.jam_mulai,
+        jamSelesai: scheduleData.jam_selesai
+    });
 
-    if (existingJadwal) {
-        throwError('Mata kuliah ini sudah memiliki jadwal pada kelas yang dipilih', 400)
+    if (conflict.hasConflict) {
+        throwError(conflict.message, 400);
     }
-
+        
     const [newJadwal] = await db
         .insert(jadwal)
         .values({ ...scheduleData, mata_kuliah_id: mk.id, dosen_id: dosen.id })
@@ -105,6 +111,7 @@ export const getJadwalFiltered = async (filter, user) => {
         .innerJoin(ruang, eq(jadwal.ruang_id, ruang.id))
         .innerJoin(users, eq(jadwal.dosen_id, users.id))
         .where(condition.length > 0 ? and(...condition) : undefined)
+        .orderBy(desc(jadwal.updated_at))
 }
 
 // Update jadwal oleh Staff
@@ -127,22 +134,19 @@ export const updateJadwal = async (id, payload) => {
         dosen_id = dosen.id
     }
 
-    const targetKelasId = payload.kelas_id || targetJadwal.kelas_id
+    const conflict = await checkJadwalRegulerConflict({
+        mataKuliahId: mata_kuliah_id,
+        kelasId: payload.kelas_id || targetJadwal.kelas_id,
+        dosenId: dosen_id,
+        ruangId: payload.ruang_id || targetJadwal.ruang_id,
+        hari: payload.hari || targetJadwal.hari,
+        jamMulai: payload.jam_mulai || targetJadwal.jam_mulai,
+        jamSelesai: payload.jam_selesai || targetJadwal.jam_selesai,
+        currentJadwalId: id
+    })
 
-    // Validasi duplikasi matkul & kelas pada ID jadwal lain
-    const [existingJadwal] = await db
-        .select({ id: jadwal.id })
-        .from(jadwal)
-        .where(
-            and(
-                eq(jadwal.mata_kuliah_id, mata_kuliah_id),
-                eq(jadwal.kelas_id, targetKelasId),
-                ne(jadwal.id, id)
-            )
-        )
-
-    if (existingJadwal) {
-        throwError('Mata kuliah ini sudah terdaftar pada kelas tersebut di jadwal lain', 400)
+    if (conflict.hasConflict) {
+        throwError(conflict.message, 400)
     }
 
     const { kode_mk, nomor_induk, ...updateData } = payload
