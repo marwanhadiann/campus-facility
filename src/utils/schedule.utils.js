@@ -11,7 +11,6 @@ export const checkRoomConflict = async ({ ruangId, tanggal, jamMulai, jamSelesai
     const dateObj = new Date(tanggal);
     const targetDay = days[dateObj.getDay()];
 
-    // 2. Jalankan kedua query secara paralel menggunakan Promise.all (Optimal & Cepat)
     const [conflictJadwalReguler, conflictPengajuanLain] = await Promise.all([
         // Query A: Cek Bentrok ke Tabel Jadwal Reguler (Berdasarkan Hari)
         db
@@ -64,7 +63,7 @@ export const checkRoomConflict = async ({ ruangId, tanggal, jamMulai, jamSelesai
 
 /**
  * Cek Bentrok Jadwal Reguler (Create / Update Jadwal oleh Staff)
- * Memeriksa: Duplikasi Matkul Kelas, Bentrok Ruangan, Bentrok Dosen, Bentrok Jam Kelas
+ * Memeriksa Duplikasi Matkul Kelas, Bentrok Ruangan, Bentrok Dosen, Bentrok Jam Kelas
  */
 export const checkJadwalRegulerConflict = async ({
     mataKuliahId,
